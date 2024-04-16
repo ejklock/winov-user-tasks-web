@@ -1,22 +1,43 @@
 import {
   Box,
   Button,
-  Divider,
   FormControl,
+  FormErrorMessage,
   FormLabel,
-  HStack,
   Input,
+  Link,
   Stack,
 } from '@chakra-ui/react'
 import { Formik } from 'formik'
+import { useContext, useEffect, useState } from 'react'
 import CenterContainer from '../../components/CenterContainer'
 import { PasswordField } from '../../components/PasswordField'
-import LoginService from '../../services/login-service'
+import { ApiResponse, AuthToken } from '../../hooks/api/api.types'
+import useApi from '../../hooks/api/use-api'
+import AuthContext from '../../store/auth/auth.context-provider'
 
 export function Login() {
-  const loginService = new LoginService()
+  const [authData, setAuthData] = useState<
+    AuthToken | AuthToken[] | undefined
+  >()
+  const { globalLogInDispatch } = useContext(AuthContext)
+  const { request } = useApi()
+
+  const createAccountActions = () => {
+    return <Link href='/register'>Criar uma conta</Link>
+  }
+  useEffect(() => {
+    if (authData && 'access_token' in authData) {
+      globalLogInDispatch({
+        authToken: authData.access_token,
+      })
+    }
+  }, [authData, globalLogInDispatch])
   return (
-    <CenterContainer headingText='Login'>
+    <CenterContainer
+      headingText='Login'
+      descriptionTextChildren={createAccountActions()}
+    >
       <Box
         py={{ base: '0', sm: '8' }}
         px={{ base: '4', sm: '10' }}
@@ -24,69 +45,82 @@ export function Login() {
         boxShadow={{ base: 'none', sm: 'md' }}
         borderRadius={{ base: 'none', sm: 'xl' }}
       >
-        <Stack spacing='6'>
-          <Stack spacing='5'>
-            <Formik
-              initialValues={{ email: '', password: '' }}
-              validate={(values) => {
-                const errors = {}
+        <Formik
+          initialValues={{ email: '', password: '' }}
+          onSubmit={async (values, { setErrors, setSubmitting }) => {
+            await request<ApiResponse<AuthToken>>(
+              'POST',
+              'auth/login',
+              {
+                email: values.email,
+                password: values.password,
+              },
+              undefined,
+              ({ data }) => {
+                setAuthData(data)
+              },
+              (error) => {
+                if (error.errors) {
+                  const { errors } = error
+                  const errorsToSet = {} as {
+                    [key: string]: string
+                  }
 
-                return errors
-              }}
-              onSubmit={async (values, { setSubmitting, setErrors }) => {
-                const { errors } = await loginService.login({
-                  email: values.email,
-                  password: values.password,
-                })
-                console.log(errors)
-                if (errors) {
-                  setErrors(errors)
-                } else {
+                  for (const field in errors) {
+                    errorsToSet[field] = errors[field][0]
+                  }
+
+                  console.log(errorsToSet)
+                  setErrors(errorsToSet)
                   setSubmitting(false)
+                } else {
+                  alert(error.message)
                 }
-              }}
-            >
-              {({
-                values,
-                errors,
-                touched,
-                handleSubmit,
-                handleChange,
-                handleBlur,
-              }) => (
-                <form onSubmit={handleSubmit}>
-                  <FormControl>
-                    <FormLabel htmlFor='email'>Email</FormLabel>
+              }
+            )
+          }}
+        >
+          {({
+            values,
+            errors,
+            touched,
+            handleSubmit,
+            handleChange,
+            handleBlur,
+          }) => (
+            <form onSubmit={handleSubmit}>
+              <Stack spacing='6'>
+                <FormControl isInvalid={!!errors.email && !!touched.email}>
+                  <FormLabel htmlFor='email'>Email</FormLabel>
 
-                    <Input
-                      id='email'
-                      name='email'
-                      type='email'
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      value={values.email}
-                    />
-                    {errors.email && touched.email && errors.email}
-                  </FormControl>
-                  <PasswordField
-                    isRequired={false}
+                  <Input
+                    id='email'
+                    name='email'
+                    type='email'
                     onChange={handleChange}
+                    onBlur={handleBlur}
+                    value={values.email}
+                  />
+                  <FormErrorMessage>{errors.email}</FormErrorMessage>
+                </FormControl>
+                <FormControl
+                  isInvalid={!!errors.password && !!touched.password}
+                >
+                  <PasswordField
+                    onChange={handleChange}
+                    min={8}
                     onBlur={handleBlur}
                     value={values.password}
                   />
-                  {errors.password && touched.password && errors.password}
-                  <Stack spacing='6'>
-                    <Button type='submit'>Login</Button>
-                    <HStack>
-                      <Divider />
-                      <Divider />
-                    </HStack>
-                  </Stack>
-                </form>
-              )}
-            </Formik>
-          </Stack>
-        </Stack>
+                  <FormErrorMessage>{errors.password}</FormErrorMessage>
+                </FormControl>
+                <Stack spacing='6'>
+                  <Button type='submit'>Login</Button>
+                </Stack>
+              </Stack>
+            </form>
+          )}
+        </Formik>
       </Box>
     </CenterContainer>
   )

@@ -1,10 +1,10 @@
 import { Reducer } from 'react'
-import { AuthAction } from './auth.actions'
+import { AuthAction } from './auth.types'
 
 export interface AuthState {
   isLoggedIn: boolean
   authToken?: string
-  userId?: string
+  sub?: string
   name?: string
   email?: string
 }
@@ -14,20 +14,18 @@ export const defaultAuthState: AuthState = {
 }
 
 const authReducer: Reducer<AuthState, AuthAction> = (state, action) => {
-  // user successfully authenticated
   if (action.type === 'LOG_IN') {
     localStorage.setItem('user', JSON.stringify(action.payload))
     return {
       ...state,
       isLoggedIn: true,
       authToken: action.payload.authToken,
-      userId: action.payload.userId,
+      userId: action.payload.sub,
       name: action.payload.name,
       email: action.payload.email,
     }
   }
 
-  // log out user
   if (action.type === 'LOG_OUT') {
     localStorage.removeItem('user')
     return defaultAuthState

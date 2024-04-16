@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useCallback,
   useEffect,
@@ -7,20 +7,13 @@ import React, {
 } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-// Project dependencies
-import { AuthActionEnum } from './auth.actions'
 import authReducer, { AuthState, defaultAuthState } from './auth.reducer'
-
-type AuthProviderProps = {
-  children: React.ReactElement
-}
-
-export type UserData = {
-  authToken: string
-  userId: string
-  name: string
-  email: string
-}
+import {
+  AuthActionEnum,
+  AuthProviderProps,
+  DecodedToken,
+  UserData,
+} from './auth.types'
 
 export interface AuthContext {
   authState: AuthState
@@ -28,38 +21,43 @@ export interface AuthContext {
   globalLogOutDispatch: () => void
 }
 
-// Auth context
 const AuthContext = createContext<AuthContext>({
   authState: defaultAuthState,
   globalLogInDispatch: () => {},
   globalLogOutDispatch: () => {},
 })
 
+const decodeToken = (token: string): DecodedToken => {
+  const base64Url = token.split('.')[1]
+  const base64 = base64Url.replace('-', '+').replace('_', '/')
+  const decodedToken = JSON.parse(window.atob(base64))
+  return decodedToken as DecodedToken
+}
 export const AuthContextProvider = (props: AuthProviderProps) => {
   const { children } = props
 
   const [authState, authDispatch] = useReducer(authReducer, defaultAuthState)
   const navigate = useNavigate()
 
-  // Check if user detail is persisted, mostly catering for refreshing of the browser
   useEffect(() => {
     const user = localStorage.getItem('user')
     if (user) {
       const userData: UserData = JSON.parse(user)
-      authDispatch({ type: AuthActionEnum.LOG_IN, payload: userData })
+      globalLogInDispatch(userData)
     }
   }, [])
 
   const globalLogInDispatch = useCallback(
     (props: UserData) => {
-      const { authToken, email, name, userId } = props
+      const { authToken } = props
+      const decoded = decodeToken(authToken)
       authDispatch({
         type: AuthActionEnum.LOG_IN,
         payload: {
           authToken,
-          userId,
-          name,
-          email,
+          sub: decoded.sub,
+          name: decoded.name,
+          email: decoded.email,
         },
       })
       navigate('/tasks')
@@ -72,7 +70,6 @@ export const AuthContextProvider = (props: AuthProviderProps) => {
     navigate('/auth/login')
   }, [navigate])
 
-  // context values to be passed down to children
   const ctx = useMemo(
     () => ({
       authState,
