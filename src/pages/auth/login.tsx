@@ -35,6 +35,7 @@ export function Login() {
   }, [authData, globalLogInDispatch])
   return (
     <CenterContainer
+      maxW='xl'
       headingText='Login'
       descriptionTextChildren={createAccountActions()}
     >
