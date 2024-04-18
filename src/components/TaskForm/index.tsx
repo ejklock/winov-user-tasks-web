@@ -7,6 +7,7 @@ import {
   Stack,
 } from '@chakra-ui/react'
 import { Formik } from 'formik'
+import { taskValidationSchema } from '../../utils/validators'
 
 export type TaskFormProps = {
   readonly initialValues: Record<string, unknown>
@@ -22,13 +23,14 @@ export default function TaskForm({
   return (
     <Formik
       initialValues={initialValues}
+      validationSchema={taskValidationSchema}
       onReset={resetForm}
       onSubmit={handleSubmit}
     >
       {({ values, errors, handleSubmit, handleChange, handleBlur }) => (
         <form onSubmit={handleSubmit}>
           <Stack spacing={4}>
-            <FormControl>
+            <FormControl isInvalid={!!errors.title}>
               <FormLabel>Título</FormLabel>
               <Input
                 name='title'
@@ -39,7 +41,7 @@ export default function TaskForm({
               />
               <FormErrorMessage>{errors.title}</FormErrorMessage>
             </FormControl>
-            <FormControl>
+            <FormControl isInvalid={!!errors.description}>
               <FormLabel>Descrição</FormLabel>
               <Input
                 name='description'
@@ -48,7 +50,16 @@ export default function TaskForm({
                 onBlur={handleBlur}
                 type='text'
               />
-              <FormErrorMessage>{errors.description}</FormErrorMessage>
+            </FormControl>
+            <FormControl isInvalid={!!errors.due_date}>
+              <FormLabel>Data de entrega</FormLabel>
+              <Input
+                name='due_date'
+                type='datetime-local'
+                onChange={handleChange}
+                value={values.due_date}
+              />
+              <FormErrorMessage>{errors.due_date}</FormErrorMessage>
             </FormControl>
             <Button type='submit' colorScheme='green'>
               Criar

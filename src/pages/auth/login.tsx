@@ -43,7 +43,6 @@ export function Login() {
             setSubmitting(true)
             await login(values.email, values.password)
             setSubmitting(false)
-
             if (errors) {
               setErrors(errors)
             }

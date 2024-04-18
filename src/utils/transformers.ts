@@ -38,3 +38,14 @@ export const convertApiValidationErrorsToFormErrors = (
     return {} // Return an empty object if apiResponse does not have an errors property
   }
 }
+
+export const transformDateStringToBrazilianFormat = (date: string) => {
+  return new Date(date).toLocaleDateString('pt-BR', {
+    hour12: false,
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+  })
+}

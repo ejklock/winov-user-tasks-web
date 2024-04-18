@@ -1,8 +1,9 @@
 import {
+  Box,
   Button,
+  ButtonGroup,
   Divider,
   Flex,
-  Stack,
   Table,
   TableContainer,
   Tbody,
@@ -48,36 +49,45 @@ export default function DataTable({
           {data?.map((row) => (
             <Tr key={row.id}>
               {columns?.map((column) => (
-                <Td key={column.key}>{row[column.key]}</Td>
-              ))}
-              {actions?.map((action) => (
-                <Td key={action.key}>
-                  <Stack
-                    direction={'row'}
-                    align={'center'}
-                    key={action.key}
-                    spacing={0}
-                  >
-                    <Button
-                      size={'xs'}
-                      colorScheme={action.color}
-                      onClick={() => action.handler(row)}
-                      mr={1}
-                    >
-                      {action.label}
-                    </Button>
-                  </Stack>
+                <Td key={column.key}>
+                  {column.formatter
+                    ? column.formatter(row[column.key])
+                    : row[column.key]}
                 </Td>
               ))}
+              <Td key={`td-${row.id}`}>
+                <ButtonGroup
+                  key={`td-${row.id}`}
+                  size='sm'
+                  isAttached
+                  variant='outline'
+                >
+                  {actions?.map((action) => (
+                    <Button
+                      key={action.key}
+                      size={'sm'}
+                      colorScheme={action.color}
+                      onClick={() => action.handler(row)}
+                    >
+                      {action?.icon && (
+                        <Box mr={1}>
+                          <action.icon />
+                        </Box>
+                      )}
+                      {action.label}
+                    </Button>
+                  ))}
+                </ButtonGroup>
+              </Td>
             </Tr>
           ))}
         </Tbody>
       </Table>
       <Divider />
-      {pagination && (
+      {pagination && data.length > 0 && (
         <Flex mt={4} justifyContent={'space-between'}>
           <Text size={'5'} ml={2} mr={2}>
-            Mostrando {page} de {pagination.total} páginas
+            Mostrando {page} de {pagination.total} página(s)
           </Text>
 
           <Flex flexDirection={'row'}>

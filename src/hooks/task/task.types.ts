@@ -2,6 +2,6 @@ export type Task = {
   id?: number
   title: string
   description?: string
-  completed_at?: Date
+  due_date: Date
   created_at?: Date
 }

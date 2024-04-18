@@ -60,24 +60,11 @@ const useAuth = () => {
       undefined,
       ({ data }) => {
         setAuthData(data)
+        setLoading(false)
       },
       (error) => {
-        if (error.errors) {
-          const { errors } = error
-          const errorsToSet = {} as {
-            [key: string]: string
-          }
-
-          for (const field in errors) {
-            errorsToSet[field] = errors[field][0]
-          }
-
-          setErrors(errorsToSet)
-          setLoading(false)
-        } else {
-          setLoading(false)
-          alert(error.message)
-        }
+        setErrors(convertApiValidationErrorsToFormErrors(error))
+        setLoading(false)
       }
     )
   }

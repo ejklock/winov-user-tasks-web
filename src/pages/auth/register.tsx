@@ -16,7 +16,7 @@ import useAuth from '../../hooks/auth/use-auth'
 import { registerValidationSchema } from '../../utils/validators'
 
 export const Register = () => {
-  const { register, errors } = useAuth()
+  const { register, loading, errors } = useAuth()
 
   return (
     <CenterContainer maxW='xl' headingText='Cadastre-se'>
@@ -40,7 +40,6 @@ export const Register = () => {
             setSubmitting(true)
             await register(values)
             setSubmitting(false)
-
             if (errors) {
               setErrors(errors)
             }
@@ -53,7 +52,6 @@ export const Register = () => {
             handleSubmit,
             handleChange,
             handleBlur,
-            isSubmitting,
           }) => (
             <form onSubmit={handleSubmit}>
               <Stack spacing='6'>
@@ -138,7 +136,7 @@ export const Register = () => {
                   </FormErrorMessage>
                 </FormControl>
                 <Stack spacing='6'>
-                  <Button isDisabled={isSubmitting} type='submit'>
+                  <Button isDisabled={loading} type='submit'>
                     Cadastrar
                   </Button>
                 </Stack>

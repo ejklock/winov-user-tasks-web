@@ -1,17 +1,21 @@
+import { IconType } from 'react-icons'
+
 export type Column = {
   key: string
   title: string
+  formatter?: (value: unknown) => string
 }
 
 export type Row = {
   id: string
   title: string
-  [key: string]: any
+  [key: string]: string
 }
 
 export type Action = {
   key: string
   label: string
+  icon?: IconType
   color?: ActionColumnColors
   handler: (row: Row) => void
 }

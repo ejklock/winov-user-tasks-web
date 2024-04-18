@@ -1,18 +1,13 @@
 import { Box, Button, Flex } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
+import { FaPenAlt, FaTrashAlt } from 'react-icons/fa'
+import { Task } from '../hooks/task/task.types'
 import useTaskApi from '../hooks/task/use-task-api'
+import { transformDateStringToBrazilianFormat } from '../utils/transformers'
 import DataTable from './DataTable'
 import { ActionColumnColors } from './DataTable/types'
 import Modal from './Modal'
 import TaskForm from './TaskForm'
-
-type Task = {
-  id: number
-  title: string
-  description: string
-  completed_at: Date
-  created_at: Date
-}
 
 export default function TasksComponent() {
   const {
@@ -38,6 +33,7 @@ export default function TasksComponent() {
     updateTask({
       id: values?.id,
       title: values?.title,
+      due_date: values?.due_date,
       description: values?.description,
     })
     onClose()
@@ -46,6 +42,7 @@ export default function TasksComponent() {
   const handleCreateTaskButton = (values: Task) => {
     createTask({
       title: values?.title,
+      due_date: values?.due_date,
       description: values?.description,
     })
     onClose()
@@ -55,6 +52,7 @@ export default function TasksComponent() {
     id: task.id,
     key: task.id,
     title: task.title,
+    due_date: task.due_date,
     description: task.description,
   }))
 
@@ -67,13 +65,16 @@ export default function TasksComponent() {
   })
 
   const [formHandler, setFormHandler] = useState(() => handleCreateTaskButton)
-  const onOpen = () => setIsOpen(true)
+  const onOpen = () => {
+    setIsOpen(true)
+  }
   const onClose = () => {
     setInitialValues({
       id: undefined,
       title: '',
       description: '',
     })
+    setFormHandler(() => handleCreateTaskButton)
     setIsOpen(false)
   }
 
@@ -108,17 +109,26 @@ export default function TasksComponent() {
               key: 'description',
               title: 'Descrição',
             },
+            {
+              key: 'due_date',
+              title: 'Data de Entrega',
+              formatter: (value) =>
+                transformDateStringToBrazilianFormat(value as string),
+            },
           ]}
           actions={[
             {
               key: 'edit',
               label: 'Editar',
+              icon: FaPenAlt,
               color: ActionColumnColors.blue,
               handler: (task) => {
+                console.log(task)
                 setFormHandler(() => handleUpdateTaskButton)
                 setInitialValues({
                   id: task.id,
                   title: task.title,
+                  due_date: task.due_date,
                   description: task.description,
                 })
 
@@ -128,6 +138,7 @@ export default function TasksComponent() {
             {
               key: 'delete',
               label: 'Excluir',
+              icon: FaTrashAlt,
               color: ActionColumnColors.red,
               handler: (task) => {
                 handleDeleteTaskButton(task.id)
