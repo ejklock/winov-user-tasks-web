@@ -52,8 +52,8 @@ export default function TasksComponent() {
     id: task.id,
     key: task.id,
     title: task.title,
-    due_date: task.due_date,
-    description: task.description,
+    due_date: task.due_date || '',
+    description: task.description || '',
   }))
 
   const [isOpen, setIsOpen] = useState(false)
@@ -62,6 +62,7 @@ export default function TasksComponent() {
     id: undefined,
     title: '',
     description: '',
+    due_date: '',
   })
 
   const [formHandler, setFormHandler] = useState(() => handleCreateTaskButton)
@@ -123,7 +124,6 @@ export default function TasksComponent() {
               icon: FaPenAlt,
               color: ActionColumnColors.blue,
               handler: (task) => {
-                console.log(task)
                 setFormHandler(() => handleUpdateTaskButton)
                 setInitialValues({
                   id: task.id,
