@@ -1,20 +1,10 @@
-import {
-  Box,
-  Button,
-  Flex,
-  Table,
-  TableCaption,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from '@chakra-ui/react'
-import { useCallback, useContext, useEffect, useState } from 'react'
-import { ApiPaginatedResponse } from '../hooks/api/api.types'
-import useApi from '../hooks/api/use-api'
-import AuthContext from '../store/auth/auth.context-provider'
+import { Box, Button, Flex } from '@chakra-ui/react'
+import { useEffect, useState } from 'react'
+import useTaskApi from '../hooks/task/use-task-api'
+import DataTable from './DataTable'
+import { ActionColumnColors } from './DataTable/types'
+import Modal from './Modal'
+import TaskForm from './TaskForm'
 
 type Task = {
   id: number
@@ -25,82 +15,135 @@ type Task = {
 }
 
 export default function TasksComponent() {
-  const [tasks, setTasks] = useState<ApiPaginatedResponse<Task>>()
-  const { request, setError } = useApi<ApiPaginatedResponse<Task>>()
-  const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(1)
-  const { globalLogOutDispatch } = useContext(AuthContext)
-
-  const fetchData = useCallback(() => {
-    setTasks(undefined)
-    request<ApiPaginatedResponse<Task>>(
-      'GET',
-      `tasks?page=${page}&per_page=${perPage}`,
-      undefined,
-      undefined,
-      setTasks,
-      setError
-    )
-  }, [page, perPage, request, setTasks, setError])
+  const {
+    page,
+    perPage,
+    setPage,
+    setPerPage,
+    tasks,
+    fetchTasksPaginated,
+    deleteTask,
+    createTask,
+    updateTask,
+  } = useTaskApi()
 
   useEffect(() => {
-    fetchData()
-  }, [page])
+    fetchTasksPaginated()
+  }, [page, perPage])
+
+  const handleDeleteTaskButton = (taskId: string) => {
+    deleteTask(taskId)
+  }
+  const handleUpdateTaskButton = (values: Task) => {
+    updateTask({
+      id: values?.id,
+      title: values?.title,
+      description: values?.description,
+    })
+    onClose()
+  }
+
+  const handleCreateTaskButton = (values: Task) => {
+    createTask({
+      title: values?.title,
+      description: values?.description,
+    })
+    onClose()
+  }
+
+  const tableData = tasks?.data?.map((task) => ({
+    id: task.id,
+    key: task.id,
+    title: task.title,
+    description: task.description,
+  }))
+
+  const [isOpen, setIsOpen] = useState(false)
+
+  const [initialValues, setInitialValues] = useState({
+    id: undefined,
+    title: '',
+    description: '',
+  })
+
+  const [formHandler, setFormHandler] = useState(() => handleCreateTaskButton)
+  const onOpen = () => setIsOpen(true)
+  const onClose = () => {
+    setInitialValues({
+      id: undefined,
+      title: '',
+      description: '',
+    })
+    setIsOpen(false)
+  }
+
   return (
     <div>
       <Box mt={4} mb={8}>
-        <Button
-          colorScheme='green'
-          mt={8}
-          onClick={() => alert('Creating task...')}
+        <Flex justifyContent='flex-end' mt={8}>
+          <Button colorScheme='green' onClick={onOpen}>
+            Criar Tarefa
+          </Button>
+        </Flex>
+        <Modal
+          isOpen={isOpen}
+          onClose={onClose}
+          onOpen={onOpen}
+          headerText='Criar Tarefa'
         >
-          Add Task
-        </Button>
-        <TableContainer>
-          <Table variant='simple'>
-            <TableCaption>Gerencie suas tarefas</TableCaption>
-            <Thead>
-              <Tr>
-                <Th>Tarefa</Th>
-                <Th>Entregue?</Th>
-                <Th>Ações</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {tasks?.data.map((task) => (
-                <Tr key={task.id}>
-                  <Td>{task.title}</Td>
-                  <Td>{task.completed_at ? 'Sim' : 'Não'}</Td>
-                  <Td>
-                    <Button
-                      colorScheme='red'
-                      onClick={() => {
-                        globalLogOutDispatch()
-                      }}
-                    >
-                      Log Out
-                    </Button>
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-          <Flex mt={4}>
-            <Button
-              onClick={() => setPage(page === 1 ? 1 : page - 1)}
-              isDisabled={tasks?.links?.prev === null}
-            >
-              Anterior
-            </Button>
-            <Button
-              ml={2}
-              onClick={() => setPage(page + 1)}
-              isDisabled={tasks?.links?.next === null}
-            >
-              Próximo
-            </Button>
-          </Flex>
-        </TableContainer>
+          <TaskForm
+            resetForm={onClose}
+            initialValues={initialValues}
+            handleSubmit={formHandler}
+          />
+        </Modal>
+        <DataTable
+          data={tableData || []}
+          columns={[
+            {
+              key: 'title',
+              title: 'Tarefa',
+            },
+            {
+              key: 'description',
+              title: 'Descrição',
+            },
+          ]}
+          actions={[
+            {
+              key: 'edit',
+              label: 'Editar',
+              color: ActionColumnColors.blue,
+              handler: (task) => {
+                setFormHandler(() => handleUpdateTaskButton)
+                setInitialValues({
+                  id: task.id,
+                  title: task.title,
+                  description: task.description,
+                })
+
+                onOpen()
+              },
+            },
+            {
+              key: 'delete',
+              label: 'Excluir',
+              color: ActionColumnColors.red,
+              handler: (task) => {
+                handleDeleteTaskButton(task.id)
+              },
+            },
+          ]}
+          pagination={{
+            page,
+            next: !!tasks?.links?.next,
+            prev: !!tasks?.links?.prev,
+            perPage,
+            total: tasks?.meta?.last_page || 0,
+            onChangePage: setPage,
+            onChangePerPage: setPerPage,
+          }}
+        />
       </Box>
     </div>
   )

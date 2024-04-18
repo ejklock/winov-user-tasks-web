@@ -1,4 +1,7 @@
 import {
+  Alert,
+  AlertIcon,
+  AlertTitle,
   Box,
   Button,
   FormControl,
@@ -9,30 +12,17 @@ import {
   Stack,
 } from '@chakra-ui/react'
 import { Formik } from 'formik'
-import { useContext, useEffect, useState } from 'react'
 import CenterContainer from '../../components/CenterContainer'
-import { PasswordField } from '../../components/PasswordField'
-import { ApiResponse, AuthToken } from '../../hooks/api/api.types'
-import useApi from '../../hooks/api/use-api'
-import AuthContext from '../../store/auth/auth.context-provider'
+import useAuth from '../../hooks/auth/use-auth'
+import { loginValidationSchema } from '../../utils/validators'
 
 export function Login() {
-  const [authData, setAuthData] = useState<
-    AuthToken | AuthToken[] | undefined
-  >()
-  const { globalLogInDispatch } = useContext(AuthContext)
-  const { request } = useApi()
+  const { login, loading, errors } = useAuth()
 
   const createAccountActions = () => {
-    return <Link href='/register'>Criar uma conta</Link>
+    return <Link href='/auth/register'>Criar uma conta</Link>
   }
-  useEffect(() => {
-    if (authData && 'access_token' in authData) {
-      globalLogInDispatch({
-        authToken: authData.access_token,
-      })
-    }
-  }, [authData, globalLogInDispatch])
+
   return (
     <CenterContainer
       maxW='xl'
@@ -47,38 +37,16 @@ export function Login() {
         borderRadius={{ base: 'none', sm: 'xl' }}
       >
         <Formik
-          initialValues={{ email: '', password: '' }}
+          validationSchema={loginValidationSchema}
+          initialValues={{ email: '', password: '', message: '' }}
           onSubmit={async (values, { setErrors, setSubmitting }) => {
-            await request<ApiResponse<AuthToken>>(
-              'POST',
-              'auth/login',
-              {
-                email: values.email,
-                password: values.password,
-              },
-              undefined,
-              ({ data }) => {
-                setAuthData(data)
-              },
-              (error) => {
-                if (error.errors) {
-                  const { errors } = error
-                  const errorsToSet = {} as {
-                    [key: string]: string
-                  }
+            setSubmitting(true)
+            await login(values.email, values.password)
+            setSubmitting(false)
 
-                  for (const field in errors) {
-                    errorsToSet[field] = errors[field][0]
-                  }
-
-                  console.log(errorsToSet)
-                  setErrors(errorsToSet)
-                  setSubmitting(false)
-                } else {
-                  alert(error.message)
-                }
-              }
-            )
+            if (errors) {
+              setErrors(errors)
+            }
           }}
         >
           {({
@@ -91,6 +59,16 @@ export function Login() {
           }) => (
             <form onSubmit={handleSubmit}>
               <Stack spacing='6'>
+                {errors.message && touched.message && (
+                  <>
+                    <Alert status='error'>
+                      <AlertIcon />
+                      <AlertTitle>{errors.message}</AlertTitle>
+                    </Alert>
+                    <FormErrorMessage>{errors.message}</FormErrorMessage>
+                  </>
+                )}
+
                 <FormControl isInvalid={!!errors.email && !!touched.email}>
                   <FormLabel htmlFor='email'>Email</FormLabel>
 
@@ -98,6 +76,7 @@ export function Login() {
                     id='email'
                     name='email'
                     type='email'
+                    placeholder='Digite seu email'
                     onChange={handleChange}
                     onBlur={handleBlur}
                     value={values.email}
@@ -107,16 +86,22 @@ export function Login() {
                 <FormControl
                   isInvalid={!!errors.password && !!touched.password}
                 >
-                  <PasswordField
-                    onChange={handleChange}
+                  <FormLabel htmlFor='password'>Senha</FormLabel>
+                  <Input
+                    type='password'
+                    id='password'
+                    name='password'
+                    placeholder='Digite sua senha'
                     min={8}
-                    onBlur={handleBlur}
+                    onChange={handleChange}
                     value={values.password}
-                  />
+                  ></Input>
                   <FormErrorMessage>{errors.password}</FormErrorMessage>
                 </FormControl>
                 <Stack spacing='6'>
-                  <Button type='submit'>Login</Button>
+                  <Button isDisabled={loading} type='submit'>
+                    Login
+                  </Button>
                 </Stack>
               </Stack>
             </form>

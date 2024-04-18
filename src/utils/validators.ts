@@ -1,9 +1,19 @@
-export const validatePasswordLength = (password: string) => {
-  return !!password && password.length > 7
-}
+import * as Yup from 'yup'
 
-export const validateEmailFormat = (email: string) => {
-  const re =
-    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  return !!email && re.test(String(email).toLowerCase())
-}
+export const loginValidationSchema = Yup.object().shape({
+  email: Yup.string()
+    .email('Digite um email válido')
+    .required('O email é obrigatório'),
+  password: Yup.string().required('A senha é obrigatória'),
+})
+
+export const registerValidationSchema = Yup.object().shape({
+  name: Yup.string().required('O nome é obrigatório'),
+  email: Yup.string()
+    .email('Digite um email válido')
+    .required('O email é obrigatório'),
+  password: Yup.string().required('A senha é obrigatória'),
+  password_confirmation: Yup.string()
+    .oneOf([Yup.ref('password'), null], 'As senhas devem ser iguais')
+    .required('A confirmação da senha é obrigatória'),
+})
